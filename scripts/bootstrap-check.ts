@@ -27,6 +27,11 @@ interface BootstrapOptions {
         envFile?: string;
 }
 
+interface LocatedConfig {
+        path: string;
+        contents: string;
+}
+
 function loadOptions(): BootstrapOptions {
         const args = new Set(process.argv.slice(2));
         const options: BootstrapOptions = {};
@@ -122,6 +127,91 @@ function ensureValue(
                 success: true,
                 details: mask ? `${key} is set` : `${key}=${value}`,
                 value,
+        };
+}
+
+function readNpmConfigs(): LocatedConfig[] {
+        const homeDir = process.env.HOME;
+        const candidates = new Set<string>();
+
+        const userConfigs = [process.env.npm_config_userconfig, process.env.NPM_CONFIG_USERCONFIG];
+        for (const configPath of userConfigs) {
+                if (configPath) {
+                        candidates.add(path.resolve(configPath));
+                }
+        }
+
+        if (homeDir) {
+                candidates.add(path.join(homeDir, '.npmrc'));
+        }
+
+        candidates.add(path.join(projectRoot, '.npmrc'));
+
+        const configs: LocatedConfig[] = [];
+        for (const configPath of candidates) {
+                if (existsSync(configPath)) {
+                        try {
+                                const contents = readFileSync(configPath, 'utf-8');
+                                configs.push({ path: configPath, contents });
+                        } catch (error) {
+                                console.warn(`⚠️  Unable to read npm config at ${configPath}: ${String(error)}`);
+                        }
+                }
+        }
+
+        return configs;
+}
+
+function checkCloudflareNpmAccess(): CheckResult {
+        const configs = readNpmConfigs();
+
+        if (configs.length === 0) {
+                return {
+                        name: 'Cloudflare npm registry access',
+                        success: false,
+                        details: 'No npm configuration files were found. Create ~/.npmrc with @cloudflare:registry and auth token entries to install private packages.',
+                };
+        }
+
+        const scopePattern = /@cloudflare:registry\s*=\s*(?<registry>.+)/i;
+        const authPattern = /\/\/npm\.pkg\.cloudflare\.com\/:_authToken\s*=\s*.+/i;
+
+        let scopedConfig: LocatedConfig | null = null;
+        let hasAuth = false;
+
+        for (const config of configs) {
+                if (!scopedConfig) {
+                        const match = config.contents.match(scopePattern);
+                        if (match && match.groups?.registry) {
+                                scopedConfig = config;
+                        }
+                }
+
+                if (!hasAuth && authPattern.test(config.contents)) {
+                        hasAuth = true;
+                }
+        }
+
+        if (!scopedConfig) {
+                return {
+                        name: 'Cloudflare npm registry access',
+                        success: false,
+                        details: 'Missing @cloudflare:registry entry in your npm configuration. Add "@cloudflare:registry=https://npm.pkg.cloudflare.com/" to ~/.npmrc.',
+                };
+        }
+
+        if (!hasAuth && !process.env.CLOUDFLARE_NPM_TOKEN && !process.env.NPM_TOKEN) {
+                return {
+                        name: 'Cloudflare npm registry access',
+                        success: false,
+                        details: 'Configure an auth token for npm.pkg.cloudflare.com in ~/.npmrc or via CLOUDFLARE_NPM_TOKEN before installing dependencies.',
+                };
+        }
+
+        return {
+                name: 'Cloudflare npm registry access',
+                success: true,
+                details: `Using Cloudflare npm registry settings from ${scopedConfig.path}`,
         };
 }
 
@@ -260,6 +350,7 @@ async function main() {
         const env = loadEnvironment(options.envFile);
 
         const checks: Array<Promise<CheckResult>> = [
+                Promise.resolve(checkCloudflareNpmAccess()),
                 checkSandboxInstanceType(env),
                 checkHealthEndpoint(env, options.skipNetwork),
                 checkLLM(env, options.skipNetwork),

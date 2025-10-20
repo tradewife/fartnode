@@ -89,7 +89,7 @@ After setting your environment variables, run the automated bootstrap check to v
 bun scripts/bootstrap-check.ts --env-file .dev.vars
 ```
 
-The script confirms that `SANDBOX_INSTANCE_TYPE` is pinned to `standard-3`, the deployed Worker responds at `/api/health`, and your Google AI Studio key returns a live completion. Use the `--no-network` flag if you are preparing an environment without outbound access and want to defer the network checks.
+The script confirms that the local npm configuration can install Cloudflare's private packages, `SANDBOX_INSTANCE_TYPE` is pinned to `standard-3`, the deployed Worker responds at `/api/health`, and your Google AI Studio key returns a live completion. Use the `--no-network` flag if you are preparing an environment without outbound access and want to defer the network checks.
 
 ### 💻 Run VibeSDK locally
 
