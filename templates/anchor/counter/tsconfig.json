@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"types": ["mocha", "chai"],
+		"typeRoots": ["./node_modules/@types"],
+		"lib": ["ES2022"],
+		"module": "ES2022",
+		"target": "ES2022",
+		"moduleResolution": "bundler",
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"resolveJsonModule": true,
+		"forceConsistentCasingInFileNames": true
+	},
+	"include": ["tests/**/*", "client/**/*"],
+	"exclude": ["node_modules"]
+}
