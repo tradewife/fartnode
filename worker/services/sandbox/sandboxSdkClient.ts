@@ -1007,7 +1007,6 @@ export class SandboxSdkClient extends BaseSandboxService {
             const instanceId = `i-${generateId()}`;
             this.logger.info('Creating sandbox instance', { instanceId, templateName, projectName });
             
-            let results: {previewURL: string, tunnelURL: string, processId: string, allocatedPort: number} | undefined;
             await this.ensureTemplateExists(templateName);
 
             const [donttouchFiles, redactedFiles] = await Promise.all([
@@ -1028,17 +1027,16 @@ export class SandboxSdkClient extends BaseSandboxService {
                     error: 'Failed to setup instance'
                 };
             }
-            results = setupResult;
             // Store instance metadata
             const metadata = {
                 templateName: templateName,
                 projectName: projectName,
                 startTime: new Date().toISOString(),
                 webhookUrl: webhookUrl,
-                previewURL: results?.previewURL,
-                processId: results?.processId,
-                tunnelURL: results?.tunnelURL,
-                allocatedPort: results?.allocatedPort,
+                previewURL: setupResult.previewURL,
+                processId: setupResult.processId,
+                tunnelURL: setupResult.tunnelURL,
+                allocatedPort: setupResult.allocatedPort,
                 donttouch_files: donttouchFiles,
                 redacted_files: redactedFiles,
             };
@@ -1048,9 +1046,9 @@ export class SandboxSdkClient extends BaseSandboxService {
                 success: true,
                 runId: instanceId,
                 message: `Successfully created instance from template ${templateName}`,
-                previewURL: results?.previewURL,
-                tunnelURL: results?.tunnelURL,
-                processId: results?.processId,
+                previewURL: setupResult.previewURL,
+                tunnelURL: setupResult.tunnelURL,
+                processId: setupResult.processId,
             };
         } catch (error) {
             this.logger.error('createInstance', error, { templateName: templateName, projectName: projectName });
@@ -1533,7 +1531,7 @@ export class SandboxSdkClient extends BaseSandboxService {
 
     async clearInstanceErrors(instanceId: string): Promise<ClearErrorsResponse> {
         try {
-            let clearedCount = 0;
+            const clearedCount = 0;
 
             // Try enhanced error system first - clear ALL errors
             try {
@@ -1836,7 +1834,7 @@ export class SandboxSdkClient extends BaseSandboxService {
             
             // Step 2: Parse wrangler config from KV
             this.logger.info('Reading wrangler configuration from KV');
-            let wranglerConfigContent = await env.VibecoderStore.get(this.getWranglerKVKey(instanceId));
+            const wranglerConfigContent = await env.VibecoderStore.get(this.getWranglerKVKey(instanceId));
             
             if (!wranglerConfigContent) {
                 // This should never happen unless KV itself has some issues
@@ -2071,6 +2069,7 @@ export class SandboxSdkClient extends BaseSandboxService {
         // Remove control characters, limit length, and escape special characters
         const sanitizedMessage = commitMessage
             .substring(0, 500) // Limit message length
+            // eslint-disable-next-line no-control-regex
             .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
             .replace(/[`$\\]/g, '\\$&') // Escape backticks, dollar signs, and backslashes
             .replace(/"/g, '\\"') // Escape double quotes

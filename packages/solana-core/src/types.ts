@@ -48,12 +48,14 @@ export interface ActionParameter {
 }
 
 export interface ComposeInput {
-	account: string;
+	account?: string;
 	[key: string]: unknown;
 }
 
 export interface ComposeResult {
 	transaction: string;
+	network: SolanaNetwork;
+	simulateFirst: boolean;
 	message?: string;
 }
 
@@ -63,7 +65,7 @@ export interface PriorityFeeConfig {
 
 export interface ComputeBudgetConfig {
 	units: number;
-	microLamports: number;
+	microLamports?: number;
 }
 
 export interface TransactionBuilderOptions {
@@ -86,8 +88,6 @@ export interface ActionError {
 	message: string;
 }
 
-export interface ActionResponse {
-	transaction?: string;
-	message?: string;
+export interface ActionResponse extends Partial<ComposeResult> {
 	error?: ActionError;
 }

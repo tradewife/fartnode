@@ -1,0 +1,23 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "vibesdk-test",
+	"main": "worker/index.ts",
+	"compatibility_date": "2025-01-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"vars": {
+		"CUSTOM_DOMAIN": "localhost",
+		"CUSTOM_PREVIEW_DOMAIN": "localhost"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "VibecoderStore",
+			"id": "test",
+			"preview_id": "test"
+		}
+	],
+	"d1_databases": [],
+	"durable_objects": {
+		"bindings": []
+	},
+	"r2_buckets": []
+}

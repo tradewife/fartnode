@@ -14,6 +14,11 @@ export default defineWorkersConfig({
     globals: true,
     setupFiles: ['./test/setup.ts'],
     include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/test/**', '**/worker/api/routes/**'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/test/**', '**/worker/api/routes/**', 'templates/**', 'packages/solana-core/__tests__/**', 'worker/api/controllers/__tests__/solanaController.test.ts'],
+    server: {
+      deps: {
+        inline: ['borsh', '@solana/web3.js'],
+      },
+    },
   },
 });

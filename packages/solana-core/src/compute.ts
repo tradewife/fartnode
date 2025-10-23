@@ -11,11 +11,8 @@ export function createComputeBudgetInstructions(
 	config?: ComputeBudgetConfig,
 ): TransactionInstruction[] {
 	const units = config?.units || DEFAULT_COMPUTE_UNIT_LIMIT;
-	const microLamports = config?.microLamports || DEFAULT_COMPUTE_UNIT_PRICE_MICROLAMPORTS;
-
 	return [
 		ComputeBudgetProgram.setComputeUnitLimit({ units }),
-		ComputeBudgetProgram.setComputeUnitPrice({ microLamports }),
 	];
 }
 

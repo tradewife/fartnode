@@ -45,6 +45,14 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
 			return null;
 		}
 
+		if (file.size > maxSizeBytes) {
+			const limitMb = (maxSizeBytes / (1024 * 1024)).toFixed(1);
+			const errorMsg = `Image "${file.name}" exceeds the ${limitMb}MB limit.`;
+			toast.error(errorMsg);
+			onError?.(errorMsg);
+			return null;
+		}
+
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();
 

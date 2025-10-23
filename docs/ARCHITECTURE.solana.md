@@ -2,142 +2,57 @@
 
 ## Overview
 
-Fartnode extends the Cloudflare VibeSDK baseline with production-ready Solana integration, transforming natural-language intent into type-safe, testable Solana applications. This architecture operates on **Devnet/Testnet by default**, with Mainnet requiring explicit user confirmation per AGENT.md security guidelines.
+Fartnode layers Solana-first capabilities on top of the Cloudflare VibeSDK stack. The worker runtime composes Solana Actions/Blinks, while shared libraries provide type-safe transaction scaffolding. Devnet/Testnet are the default targets; Mainnet activity requires an explicit opt-in per `AGENT.md`.
 
 ## Components
 
-### 1. Solana Core Library (`vibesdk/shared/solana-core/`)
+- `packages/solana-core` — TypeScript library exporting Action metadata types, RPC helpers, compute budget + priority fee utilities, simulation helpers, and `buildVersionedTransaction`. The package is published locally as `@fartnode/solana-core`.
+- `worker/api/controllers/solanaController.ts` — Action handlers that validate input, orchestrate RPC calls, and compose transactions via the Solana core library.
+- `worker/api/routes/solanaRoutes.ts` — Hono route registrations wiring GET/POST handlers for `/api/solana/actions/*`.
+- `worker/logger` & `worker/middleware` — Structured logging, rate limiting, and auth primitives applied across Actions.
 
-Reusable TypeScript utilities for Solana transaction composition and validation:
+## Routing (Worker vs Next/Edge)
 
-- **types.ts** — ActionMetadata, ComposeInput, ComposeResult, NetworkConfig
-- **rpc.ts** — Connection management, RPC provider wrapper (endpoint from env)
-- **fees.ts** — Priority fee helpers with sensible defaults (5000 microlamports) and overrides
-- **compute.ts** — ComputeBudgetProgram instruction builders (limit + price)
-- **simulate.ts** — `simulateFirst(tx)` utility for pre-flight validation
-- **builders.ts** — `buildVersionedTx()` for composing versioned transactions with optional LUTs
+All Solana endpoints run inside the Cloudflare Worker (`worker/index.ts → worker/app.ts`). Requests enter Hono middleware, route through `worker/api/routes/solanaRoutes.ts`, and terminate in the relevant controller. There is no Next.js/Edge runtime in this repository; the Worker is the single execution plane for both local (`bun dev`) and production (`wrangler publish`) environments.
 
-**Key principle:** All transactions use **versioned transactions**, **priority fees**, and **compute budget presets** by default.
+## Action/Blink data flow
 
-### 2. Action/Blink Endpoints
+1. **GET `/api/solana/actions/devnet-airdrop`** — Returns `ActionMetadata` describing title, description, icon, and input schema. Response is typed using `packages/solana-core/src/types.ts`.
+2. **POST `/api/solana/actions/devnet-airdrop`** — Validates payload (`publicKey`, optional `amountSol`), enforces idempotency + rate limits, fetches a recent blockhash, prepends compute budget & priority fee presets, builds a Versioned Transaction via `buildVersionedTransaction`, and serializes to base64.
+3. **Response** — `{ transaction, network: "devnet", simulateFirst: true }` guides clients to simulate before broadcast.
+4. **Client** — Performs simulation, signature, and submission (e.g., Blink, Wallet Adapter, Expo MWA).
 
-Solana Actions expose composable transaction endpoints following the [Solana Actions spec](https://solana.com/docs/advanced/actions):
+Structured logs trace each stage so telemetry dashboards can follow a request from ingress through RPC composition.
 
-- **GET** — Returns Action metadata (title, description, input schema, icon)
-- **POST** — Validates input, composes a versioned transaction, returns base64-encoded transaction
+## Security model (Devnet default, no secrets)
 
-**Location:** `vibesdk/worker/api/solana/` (Cloudflare Worker routing)
+- Network defaults to `devnet`; overrides require explicit configuration and acknowledgement.
+- No private keys or secrets are requested. RPC endpoints come from public cluster URLs or `SOLANA_RPC_ENDPOINT` when provided.
+- Responses redact internal error details; logs contain only public identifiers (wallet addresses, blockhashes).
+- Idempotency headers and rate limiting protect against abuse and replay.
+- Any Mainnet activity must surface program IDs, fee payer, and compute budget for approval in line with `AGENT.md`.
 
-**Example:** `devnet-airdrop` Action demonstrates:
-- Input validation (publicKey, amountSol)
-- Idempotency support
-- Priority fees + compute budget
-- Versioned transaction composition
-- Simulate-first recommendation
+## Telemetry hooks
 
-### 3. Worker Routing Integration
+- `worker/logger` provides component-scoped loggers (e.g., `createLogger('SolanaAction')`) with structured payloads.
+- Durable Object rate limit store (`services/rate-limit/DORateLimitStore`) records action usage without persisting PII.
+- Observability integrations (`worker/observability`) are ready for Sentry or custom exporters once credentials are supplied.
 
-Actions are registered in Hono router (`vibesdk/worker/app.ts`):
+## Future templates (Wallet Adapter, Expo MWA, Anchor/Native)
 
-```typescript
-app.route('/api/solana', solanaRoutes);
-```
+1. **Wallet Adapter (React Web)** — Integrate `@solana/wallet-adapter-react` into the UI layer with presets for compute/priority fees and simulate-first UX.  
+   SST: [Connect a Wallet (React)](https://solana.com/cookbook/wallets/connect-wallet-react?utm_source=llms&utm_medium=ai&utm_campaign=txt)
+2. **Expo Mobile Wallet Adapter** — Ship an Expo starter that wires the Solana Mobile stack and deep-link capable action flows.  
+   SST: [Solana Mobile Dapps with Expo](https://solana.com/courses/mobile/solana-mobile-dapps-with-expo?utm_source=llms&utm_medium=ai&utm_campaign=txt)
+3. **Anchor Program Template** — Generate PDAs, CPI boundaries, error enums, and typed clients for Anchor programs.  
+   SST: [Intro to Anchor](https://solana.com/courses/onchain-development/intro-to-anchor?utm_source=llms&utm_medium=ai&utm_campaign=txt)
+4. **Native Rust Program Template** — Provide low-level Solana program scaffolding with matching TS clients backed by `@fartnode/solana-core`.  
+   SST: [Native Onchain Development](https://solana.com/courses/native-onchain-development/?utm_source=llms&utm_medium=ai&utm_campaign=txt)
 
-**Route pattern:** `/api/solana/actions/<action-name>` (GET/POST)
+## SST Links
 
-### 4. Security Model
-
-Per [AGENT.md](../AGENT.md):
-
-- **Never** expose or request private keys/mnemonics
-- **Default network:** Devnet/Testnet
-- **Mainnet guard:** Requires explicit confirmation; surface fee payer, signers, compute budget, program IDs
-- **Secrets:** Only via secure env/KV mounts; redact logs
-- **Simulate-first:** All transaction composers recommend simulation before broadcast
-
-### 5. Data Flow (Action/Blink)
-
-```
-User → GET /api/solana/actions/devnet-airdrop
-    ← Action metadata (inputs, title, icon)
-
-User → POST /api/solana/actions/devnet-airdrop
-       { publicKey, amountSol }
-    ← { transaction: <base64>, network: "devnet" }
-
-User → Signs + broadcasts transaction
-    ← Confirmation on Solana
-```
-
-### 6. Telemetry Hooks
-
-Structured logging via `vibesdk/worker/logger/`:
-- Action GET/POST requests
-- Input validation failures
-- Transaction composition errors
-- Simulation results (when implemented)
-
-**No secrets logged.** Public keys, program IDs, and transaction hashes only.
-
-## Future Templates
-
-The following templates will extend the Action/Blink foundation:
-
-### Wallet Adapter (React Web)
-- `@solana/wallet-adapter-react` integration
-- Priority fees + compute budget defaults
-- Simulate-first UX patterns
-- Clear error messaging
-
-References:
-- [Wallet Adapter React Guide](https://solana.com/cookbook/wallets/connect-wallet-react)
-- [Priority Fees](https://solana.com/cookbook/transactions/add-priority-fees)
-
-### Mobile Wallet Adapter (Expo)
-- MWA context/hooks
-- Deep-link handlers
-- Simulate-first prompts
-- Basic payment/action flows
-
-References:
-- [Expo MWA Course](https://solana.com/courses/mobile/solana-mobile-dapps-with-expo)
-- [MWA Deep Dive](https://solana.com/courses/mobile/mwa-deep-dive)
-
-### Anchor Program Template
-- PDAs, account validation, signer/writable ordering
-- Error enums, CPI boundaries
-- Compute budget usage
-- Upgrade authority policy
-- Typed TS client + e2e tests
-
-References:
-- [Intro to Anchor](https://solana.com/courses/onchain-development/intro-to-anchor)
-- [Anchor PDAs](https://solana.com/courses/onchain-development/anchor-pdas)
-- [Anchor CPIs](https://solana.com/courses/onchain-development/anchor-cpi)
-
-### Native Rust Program Template
-- Instruction enum, account structs, validation
-- CPI examples, compute budgeting, error mapping
-- TS client with transaction builders + tests
-
-References:
-- [Native Onchain Development](https://solana.com/courses/native-onchain-development/)
-- [Hello World Native](https://solana.com/courses/native-onchain-development/hello-world-program)
-- [Program Derived Addresses](https://solana.com/courses/native-onchain-development/program-derived-addresses)
-
-## References (SST)
-
-All Solana patterns in this architecture reference the official Single Source of Truth indexed by [solana.com/llms.txt](https://solana.com/llms.txt):
-
-- [Solana Cookbook](https://solana.com/cookbook/)
-- [Getting Test SOL](https://solana.com/cookbook/development/test-sol)
-- [Send SOL](https://solana.com/cookbook/transactions/send-sol)
-- [Priority Fees](https://solana.com/cookbook/transactions/add-priority-fees)
-- [Optimize Compute](https://solana.com/cookbook/transactions/optimize-compute)
-- [Intro to Solana Course](https://solana.com/courses/intro-to-solana/)
-
----
-
-**Updated:** 2025-10-23  
-**Network Default:** Devnet/Testnet  
-**Mainnet:** Explicit approval required
+- [Solana Actions Spec](https://solana.com/docs/advanced/actions?utm_source=llms&utm_medium=ai&utm_campaign=txt)
+- [Getting Test SOL](https://solana.com/cookbook/development/test-sol?utm_source=llms&utm_medium=ai&utm_campaign=txt)
+- [Send SOL](https://solana.com/cookbook/transactions/send-sol?utm_source=llms&utm_medium=ai&utm_campaign=txt)
+- [Add Priority Fees](https://solana.com/cookbook/transactions/add-priority-fees?utm_source=llms&utm_medium=ai&utm_campaign=txt)
+- [Optimize Compute](https://solana.com/cookbook/transactions/optimize-compute?utm_source=llms&utm_medium=ai&utm_campaign=txt)

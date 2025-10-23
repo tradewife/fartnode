@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { WebSocket } from 'partysocket';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';

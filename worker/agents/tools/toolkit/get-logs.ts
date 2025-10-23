@@ -17,7 +17,7 @@ export function createGetLogsTool(
 		function: {
 			name: 'get_logs',
 			description:
-				`Get the current application/server logs from the sandbox environment. Useful for debugging runtime issues, checking console output, or investigating errors. Clears logs every time when called. App\'s browser console warn/error messages are also piped here.
+				`Get the current application/server logs from the sandbox environment. Useful for debugging runtime issues, checking console output, or investigating errors. Clears logs every time when called. App's browser console warn/error messages are also piped here.
 All unread logs would be streamed, so you need to match timestamps on your own to understand things.`,
 			parameters: {
 				type: 'object',

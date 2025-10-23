@@ -25,16 +25,12 @@
 		"noUncheckedSideEffectImports": true,
 		"baseUrl": ".",
 		"paths": {
-		  "@/*": [
-			"./src/*"
-		  ],
-          "shared/*": [
-            "./shared/*"
-          ],
-          "worker/*": [
-            "./worker/*"
-          ]
+			"@/*": ["./src/*"],
+			"shared/*": ["./shared/*"],
+			"worker/*": ["./worker/*"],
+			"@fartnode/solana-core": ["./packages/solana-core/src/index.ts"],
+			"@fartnode/solana-core/*": ["./packages/solana-core/src/*"]
 		}
 	},
-	"include": ["src", "shared"],
+	"include": ["src", "shared", "packages"],
 }

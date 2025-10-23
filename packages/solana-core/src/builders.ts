@@ -6,6 +6,9 @@ import {
 	type AddressLookupTableAccount,
 } from '@solana/web3.js';
 import { createComputeBudgetInstructions } from './compute.js';
+import {
+	createPriorityFeeInstruction,
+} from './fees.js';
 import type { TransactionBuilderOptions } from './types.js';
 
 export async function buildVersionedTransaction(
@@ -17,14 +20,23 @@ export async function buildVersionedTransaction(
 		instructions,
 		lookupTables = [],
 		computeBudget,
+		priorityFee,
 	} = options;
 
 	const payerKey =
 		typeof payer === 'string' ? new PublicKey(payer) : payer;
 
+	const priorityInstruction = createPriorityFeeInstruction(
+		priorityFee ??
+			(computeBudget?.microLamports !== undefined
+				? { microLamports: computeBudget.microLamports }
+				: undefined),
+	);
+
 	const computeIxs = createComputeBudgetInstructions(computeBudget);
 
 	const allInstructions = [
+		priorityInstruction,
 		...computeIxs,
 		...(instructions as TransactionInstruction[]),
 	];
