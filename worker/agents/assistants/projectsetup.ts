@@ -2,6 +2,7 @@ import { TemplateDetails } from "../../services/sandbox/sandboxTypes";
 import { SetupCommandsType, type Blueprint } from "../schemas";
 import { createObjectLogger, StructuredLogger } from '../../logger';
 import { generalSystemPromptBuilder, PROMPT_UTILS } from '../prompts';
+import { INSTITUTIONAL_PROMPT_HEADER } from '../constants';
 import { createAssistantMessage, createSystemMessage, createUserMessage } from "../inferutils/common";
 import { executeInference, } from "../inferutils/infer";
 import Assistant from "./assistant";
@@ -17,7 +18,9 @@ interface GenerateSetupCommandsArgs {
     inferenceContext: InferenceContext;
 }
 
-const SYSTEM_PROMPT = `You are an Expert DevOps Engineer at Cloudflare specializing in project setup and dependency management. Your task is to analyze project requirements and generate precise installation commands for missing dependencies.`
+const SYSTEM_PROMPT = `${INSTITUTIONAL_PROMPT_HEADER}
+
+You are an Expert DevOps Engineer at Cloudflare specializing in project setup and dependency management. Your task is to analyze project requirements and generate precise installation commands for missing dependencies.`
 
 const SETUP_USER_PROMPT = `## TASK
 Analyze the blueprint and generate exact \`bun add\` commands for missing dependencies. Only suggest packages that are NOT already in the starting template.

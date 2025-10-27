@@ -7,12 +7,15 @@ import { generalSystemPromptBuilder, issuesPromptFormatter, PROMPT_UTILS } from 
 import { TemplateRegistry } from '../inferutils/schemaFormatters';
 import { z } from 'zod';
 import { AgentOperation, OperationOptions } from '../operations/common';
+import { INSTITUTIONAL_PROMPT_HEADER } from '../constants';
 
 export interface CodeReviewInputs {
     issues: IssueReport
 }
 
-const SYSTEM_PROMPT = `You are a Senior Software Engineer at Cloudflare specializing in comprehensive React application analysis. Your mandate is to identify ALL critical issues across the ENTIRE codebase that could impact functionality, user experience, or deployment.
+const SYSTEM_PROMPT = `${INSTITUTIONAL_PROMPT_HEADER}
+
+You are a Senior Software Engineer at Cloudflare specializing in comprehensive React application analysis. Your mandate is to identify ALL critical issues across the ENTIRE codebase that could impact functionality, user experience, or deployment.
 
 ## COMPREHENSIVE ISSUE DETECTION PRIORITIES:
 

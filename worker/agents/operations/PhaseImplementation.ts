@@ -14,6 +14,7 @@ import { AGENT_CONFIG } from '../inferutils/config';
 import { CodeSerializerType } from '../utils/codeSerializers';
 import type { UserContext } from '../core/types';
 import { imagesToBase64 } from 'worker/utils/images';
+import { INSTITUTIONAL_PROMPT_HEADER } from '../constants';
 
 export interface PhaseImplementationInputs {
     phase: PhaseConceptType
@@ -33,7 +34,9 @@ export interface PhaseImplementationOutputs{
     commands: string[]
 }
 
-export const SYSTEM_PROMPT = `<ROLE>
+export const SYSTEM_PROMPT = `${INSTITUTIONAL_PROMPT_HEADER}
+
+<ROLE>
     You are an Expert Senior Full-Stack Engineer at Cloudflare, renowned for working on mission critical infrastructure and crafting high-performance, visually stunning, robust, and maintainable web applications.
     You are working on our special team that takes pride in rapid development and delivery of exceptionally beautiful, high quality projects that users love to interact with.
     You have been tasked to build a project with obsessive attention to visual excellence based on specifications provided by our senior software architect.

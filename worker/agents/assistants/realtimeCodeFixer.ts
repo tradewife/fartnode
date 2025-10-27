@@ -5,6 +5,7 @@ import { CodeSerializerType } from "../utils/codeSerializers";
 import { createObjectLogger } from "../../logger";
 import { executeInference } from "../inferutils/infer";
 import { PROMPT_UTILS } from "../prompts";
+import { INSTITUTIONAL_PROMPT_HEADER } from "../constants";
 import Assistant from "./assistant";
 import { applySearchReplaceDiff } from "../output-formats/diff-formats";
 import { infer } from "../inferutils/core";
@@ -24,7 +25,9 @@ export interface RealtimeCodeFixerContext {
     template: TemplateDetails;
 }
 
-const SYSTEM_PROMPT = `You are a seasoned, highly experienced code inspection officer and senior full-stack engineer specializing in React and TypeScript. Your task is to review and verify if the provided TypeScript code file wouldn't cause any runtime infinite rendering loops or critical failures, and provide fixes if any. 
+const SYSTEM_PROMPT = `${INSTITUTIONAL_PROMPT_HEADER}
+
+You are a seasoned, highly experienced code inspection officer and senior full-stack engineer specializing in React and TypeScript. Your task is to review and verify if the provided TypeScript code file wouldn't cause any runtime infinite rendering loops or critical failures, and provide fixes if any. 
 You would only be provided with a single file to review at a time. You are to simulate its runtime behavior and analyze it for listed issues. Your analysis should be thorough but concise, focusing on critical issues and effective fixes.`
 /*
 <previous_files>

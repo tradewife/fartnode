@@ -7,6 +7,7 @@ import { RateLimitExceededError, SecurityError } from 'shared/types/errors';
 import { TemplateSelection, TemplateSelectionSchema } from '../../agents/schemas';
 import { generateSecureToken } from 'worker/utils/cryptoUtils';
 import type { ImageAttachment } from '../../types/image-attachment';
+import { INSTITUTIONAL_PROMPT_HEADER } from '../constants';
 
 const logger = createLogger('TemplateSelector');
 interface SelectTemplateArgs {
@@ -39,7 +40,9 @@ export async function selectTemplate({ env, query, availableTemplates, inference
             `- Template #${index + 1} \n Name - ${t.name} \n Language: ${t.language}, Frameworks: ${t.frameworks?.join(', ') || 'None'}\n ${t.description.selection}`
         ).join('\n\n');
 
-        const systemPrompt = `You are an Expert Software Architect at Cloudflare specializing in template selection for rapid development. Your task is to select the most suitable starting template based on user requirements.
+        const systemPrompt = `${INSTITUTIONAL_PROMPT_HEADER}
+
+You are an Expert Software Architect at Cloudflare specializing in template selection for rapid development. Your task is to select the most suitable starting template based on user requirements.
 
 ## SELECTION EXAMPLES:
 

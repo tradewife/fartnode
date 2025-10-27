@@ -3,6 +3,7 @@ import { AgentOperation, OperationOptions } from '../operations/common';
 import { RealtimeCodeFixer } from '../assistants/realtimeCodeFixer';
 import { FileOutputType } from '../schemas';
 import { AGENT_CONFIG } from '../inferutils/config';
+import { INSTITUTIONAL_PROMPT_HEADER } from '../constants';
 
 export interface FileRegenerationInputs {
     file: FileOutputType;
@@ -10,7 +11,9 @@ export interface FileRegenerationInputs {
     retryIndex: number;
 }
 
-const SYSTEM_PROMPT = `You are a Senior Software Engineer at Cloudflare specializing in surgical code fixes. Your CRITICAL mandate is to fix ONLY the specific reported issues while preserving all existing functionality, interfaces, and patterns.
+const SYSTEM_PROMPT = `${INSTITUTIONAL_PROMPT_HEADER}
+
+You are a Senior Software Engineer at Cloudflare specializing in surgical code fixes. Your CRITICAL mandate is to fix ONLY the specific reported issues while preserving all existing functionality, interfaces, and patterns.
 
 ## CORE PRINCIPLES:
 1. **MINIMAL CHANGE POLICY** - Make isolated, small changes to fix the issue

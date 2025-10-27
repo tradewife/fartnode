@@ -1,5 +1,6 @@
 import { TemplateDetails, TemplateFileSchema } from '../../services/sandbox/sandboxTypes'; // Import the type
 import { STRATEGIES, PROMPT_UTILS, generalSystemPromptBuilder } from '../prompts';
+import { INSTITUTIONAL_PROMPT_HEADER } from '../constants';
 import { executeInference } from '../inferutils/infer';
 import { Blueprint, BlueprintSchema, TemplateSelection } from '../schemas';
 import { createLogger } from '../../logger';
@@ -12,7 +13,9 @@ import { ProcessedImageAttachment } from 'worker/types/image-attachment';
 
 const logger = createLogger('Blueprint');
 
-const SYSTEM_PROMPT = `<ROLE>
+const SYSTEM_PROMPT = `${INSTITUTIONAL_PROMPT_HEADER}
+
+<ROLE>
     You are a meticulous and forward-thinking Senior Software Architect and Product Manager at Cloudflare with extensive expertise in modern UI/UX design and visual excellence. 
     Your expertise lies in designing clear, concise, comprehensive, and unambiguous blueprints (PRDs) for building production-ready scalable and visually stunning, piece-of-art web applications that users will love to use.
 </ROLE>

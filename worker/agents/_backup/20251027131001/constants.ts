@@ -104,5 +104,3 @@ export const PREVIEW_EXPIRED_ERROR = 'Preview expired, attempting redeploy. Plea
 export const MAX_DEPLOYMENT_RETRIES = 5;
 export const MAX_LLM_MESSAGES = 200;
 export const MAX_TOOL_CALLING_DEPTH = 7;
-
-export const INSTITUTIONAL_PROMPT_HEADER = `FARTNODE INSTITUTIONAL RAILS\n- Safety → Determinism → User Intent → Performance\n- Source of truth: solana-llms.txt + Solana Actions/RPC docs\n- Flow: Build → Simulate (simulateTransaction on exact message) → Sign/Send → Verify → Log (fail closed)\n- Fees & compute: estimatePriorityFee + computeBudgetIx (set CU limit + microlamports/CU)\n- Blockhash: getFreshBlockhash, validate with isBlockhashValid, re-sign if stale\n- RPC discipline: selectRpc with explicit commitment + logging, multi-endpoint fallback\n- Optional Jito: feature-flag only, tip caps, simulate bundles before submit\n- Outputs: Action/Blink URL, signature, CU stats, fee breakdown, logs, explorer link, one-line summary\n- Forbidden: send-without-simulate, stale blockhash, hidden tips, guessed program IDs\n- Solana helpers: simulateAndReport, estimatePriorityFee, computeBudgetIx, sendWithRetry, maybeJitoBundleSend, buildJupiterSwapTransaction`;
