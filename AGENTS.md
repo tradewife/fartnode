@@ -4,8 +4,8 @@ This file defines the agent roles and responsibilities for the FARTNODE distribu
 
 **FARTNODE** stands for **Foundation of Autonomous, Resilient Tokenomics and Network of Orchestrators for Decentralised Empowerment**.
 
-- **FART** – Foundation of Autonomous, Resilient Tokenomics  
-- **NODE** – Network of Orchestrators for Decentralised Empowerment  
+- **FART** – Foundation of Autonomous, Resilient Tokenomics
+- **NODE** – Network of Orchestrators for Decentralised Empowerment
 
 In practice, this repo implements the **NODE** part: a Solana‑based Network of Orchestrators (bots/services) that:
 
@@ -321,4 +321,4 @@ Maintain clear documentation for developers and operators.
   - configure the project for a new token
   - run devnet tests
   - understand how and when holders get SOL airdrops
-  by following the docs only.
+    by following the docs only.

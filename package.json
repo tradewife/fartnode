@@ -1,0 +1,40 @@
+{
+  "name": "fartnode-distributor",
+  "version": "1.0.0",
+  "description": "FARTNODE creator fee distributor",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "epoch": "node dist/index.js",
+    "dev:epoch": "ts-node src/index.ts",
+    "test": "jest",
+    "lint": "eslint . --ext .ts && prettier --check .",
+    "monitor": "ts-node src/monitor.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
+    "bs58": "^6.0.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "pino": "^10.1.0",
+    "undici": "^7.16.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "jest": "^30.2.0",
+    "prettier": "^3.6.2",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

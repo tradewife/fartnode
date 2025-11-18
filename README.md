@@ -2,8 +2,8 @@
 
 **FARTNODE** stands for **Foundation of Autonomous, Resilient Tokenomics and Network of Orchestrators for Decentralised Empowerment**.
 
-- **FART** = *Foundation of Autonomous, Resilient Tokenomics*  
-- **NODE** = *Network of Orchestrators for Decentralised Empowerment*
+- **FART** = _Foundation of Autonomous, Resilient Tokenomics_
+- **NODE** = _Network of Orchestrators for Decentralised Empowerment_
 
 This repo contains the Solana distribution engine that routes Pump.fun creator rewards to `$FARTNODE` holders. In this model, any wallet that holds `$FARTNODE` at snapshot time is eligible to receive SOL airdrops from the creator fee flow (subject to configurable eligibility rules). There is **no separate node NFT or staking contract** – holding the token is enough.
 
@@ -92,14 +92,14 @@ Installed via `package.json`:
 - `typescript`
 - `ts-node` or `tsx`
 - `eslint`, `@typescript-eslint/parser`, `@typescript-eslint/eslint-plugin`, `prettier`
-- `vitest` (or `jest`) – testing
+- `jest` – testing
 
 Example install:
 
 ```bash
 npm install   @solana/web3.js @solana/spl-token bs58 dotenv pino
 
-npm install -D   typescript ts-node vitest   eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin prettier
+npm install -D   typescript ts-node jest ts-jest @types/jest   eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin prettier
 ```
 
 ---
@@ -108,12 +108,12 @@ npm install -D   typescript ts-node vitest   eslint @typescript-eslint/parser @t
 
 ### Key accounts
 
-- **Creator Wallet**  
-  - Owns the Pump.fun token.  
+- **Creator Wallet**
+  - Owns the Pump.fun token.
   - Receives creator fees (SOL) from Pump.fun’s creator vault.
 
-- **Rewards Vault**  
-  - Dedicated SOL account used as the source for airdrops.  
+- **Rewards Vault**
+  - Dedicated SOL account used as the source for airdrops.
   - Holds the pooled share of creator rewards between epochs.
 
 There is **no separate staking contract or node NFT**. Eligibility is computed directly from `$FARTNODE` token balances at snapshot time.
@@ -303,6 +303,17 @@ Example cron (once per day at 00:05 UTC):
 
 Systemd timers can be configured similarly with a oneshot service.
 
+## Monitoring UI
+
+Operators can inspect historical epochs via the lightweight monitoring UI:
+
+```bash
+npm run monitor
+# opens http://localhost:8787 by default
+```
+
+The server reads recent entries from `data/epochs.jsonl` and renders a simple table summarizing claimed/distributed SOL, eligible holder counts, and transaction counts. Use `MONITOR_PORT` to override the port if needed.
+
 ---
 
 ## Testing
@@ -325,7 +336,7 @@ Run:
 npm run test
 ```
 
-Configure `vitest` or `jest` in `package.json` as preferred.
+Tests run via Jest (`npm run test`).
 
 ---
 
