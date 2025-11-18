@@ -1,8 +1,11 @@
 # FARTNODE Distributor
 
-Automated Solana service that routes Pump.fun creator rewards to `$FARTNODE` “nodes” via node-weighted SOL distributions.
+**FARTNODE** stands for **Foundation of Autonomous, Resilient Tokenomics and Network of Orchestrators for Decentralised Empowerment**.
 
-This repo contains the **on-chain distributor** that is intended for production use.
+- **FART** = *Foundation of Autonomous, Resilient Tokenomics*  
+- **NODE** = *Network of Orchestrators for Decentralised Empowerment*
+
+This repo contains the Solana distribution engine that routes Pump.fun creator rewards to `$FARTNODE` holders. In this model, any wallet that holds `$FARTNODE` at snapshot time is eligible to receive SOL airdrops from the creator fee flow (subject to configurable eligibility rules). There is **no separate node NFT or staking contract** – holding the token is enough.
 
 ---
 
@@ -10,23 +13,20 @@ This repo contains the **on-chain distributor** that is intended for production 
 
 FARTNODE turns Pump.fun creator rewards into periodic SOL distributions for `$FARTNODE` holders.
 
-At each epoch, the service:
+At each epoch (for example, once per day), the service:
 
 1. Monitors the Pump.fun creator vault and enforces a configurable USD threshold.
-2. Claims accumulated creator fees to the **Creator Wallet**.
+2. Claims accumulated creator fees (SOL) to the **Creator Wallet**.
 3. Routes a configurable share of the claimed SOL into a dedicated **Rewards Vault**.
-4. Snapshots `$FARTNODE` SPL token holders on-chain.
-5. Computes “node units” per wallet:
-   - `300,000 $FARTNODE` = **1 mini-node unit**
-   - `3,000,000 $FARTNODE` = **10-unit max-node** (per-wallet cap)
-   - Global cap: **160 units** (16 max-node equivalents)
-6. Distributes the Rewards Vault balance in SOL, proportional to **active node units**.
-7. Logs all activity for audit and for powering `FARTNODE.com` metrics.
+4. Snapshots `$FARTNODE` SPL token accounts on-chain.
+5. Applies eligibility rules (for example: minimum balance, whale caps).
+6. Distributes the Rewards Vault balance in SOL pro‑rata to eligible `$FARTNODE` holders.
+7. Logs all activity for audit and for powering FARTNODE.com metrics.
 
 Design priorities:
 
-- **Safety:** no double-spend from the Rewards Vault, predictable failure modes.
-- **Transparency:** distributions explainable from logs + config.
+- **Safety:** no double‑spend from the Rewards Vault, predictable failure modes.
+- **Transparency:** distributions are explainable from on‑chain data, logs, and config.
 - **Operational simplicity:** single CLI entrypoint, suitable for cron/systemd.
 
 ---
@@ -113,32 +113,36 @@ npm install -D   typescript ts-node vitest   eslint @typescript-eslint/parser @t
   - Receives creator fees (SOL) from Pump.fun’s creator vault.
 
 - **Rewards Vault**  
-  - Dedicated SOL account used as the source for distributions.  
+  - Dedicated SOL account used as the source for airdrops.  
   - Holds the pooled share of creator rewards between epochs.
+
+There is **no separate staking contract or node NFT**. Eligibility is computed directly from `$FARTNODE` token balances at snapshot time.
 
 ### Core components (`src/`)
 
-- `config.ts` – environment variables, constants (thresholds, node math)
-- `logger.ts` – structured logging setup
+The intended structure is:
+
+- `config.ts` – environment variables, constants (thresholds, eligibility rules).
+- `logger.ts` – structured logging setup.
 - `pump.ts` – integration with Pump.fun / PumpPortal:
-  - builds and submits `collectCreatorFee` transactions
-- `pricing.ts` – SOL/USD price via a price API (e.g. Jupiter) for threshold checks
-- `rewardsVault.ts` – moves SOL Creator → Rewards Vault; queries vault balance
-- `holders.ts` – fetches and decodes `$FARTNODE` token accounts via `getProgramAccounts`
-- `nodes.ts` – node-unit computation:
-  - 300k / 3M thresholds, 160-unit global cap, deterministic ordering
-- `distribution.ts` – SOL payouts from Rewards Vault to node holders
+  - builds and submits `collectCreatorFee` transactions.
+- `pricing.ts` – SOL/USD price via a price API (for USD threshold checks).
+- `rewardsVault.ts` – moves SOL Creator → Rewards Vault; queries vault balance.
+- `holders.ts` – fetches and decodes `$FARTNODE` token accounts via `getProgramAccounts`.
+- `eligibility.ts` – applies rules (min balance, whale caps) to decide which holders are eligible.
+- `distribution.ts` – SOL airdrops from Rewards Vault to eligible holders.
 - `epoch.ts` – orchestration of a single epoch:
-  - threshold check → claim → vault top-up → snapshot → distribution → logging
-- `index.ts` – CLI entrypoint (runs one epoch)
+  - threshold check → claim → vault top‑up → snapshot holders → eligibility filter → distribution → logging.
+- `index.ts` – CLI entrypoint (runs one epoch).
 
 ### Epoch invariants
 
 For a correctly configured deployment:
 
-- Sum of lamports distributed in an epoch **≤** vault balance at epoch start.
+- Sum of lamports distributed in an epoch **≤** Rewards Vault balance at epoch start.
 - Any undistributed residual lamports remain in the Rewards Vault.
-- If an epoch fails mid-way, remaining SOL stays in vault; no partial double-spend.
+- If an epoch fails mid‑way, remaining SOL stays in the Rewards Vault; no partial double‑spend.
+- Eligibility is derived solely from on‑chain `$FARTNODE` balances (within the configured rules).
 
 ---
 
@@ -158,19 +162,18 @@ CREATOR_SECRET_B58=<BASE58_PRIVATE_KEY_CREATOR>
 REWARDS_VAULT_SECRET_B58=<BASE58_PRIVATE_KEY_REWARDS_VAULT>
 
 # Epoch behavior
-EPOCH_SECONDS=3600             # 1 hour (cron/systemd cadence)
+EPOCH_SECONDS=86400            # 1 day (cron/systemd cadence)
 USD_THRESHOLD=1000             # minimum combined USD value to run epoch
 DISTRIBUTION_PERCENT=0.7       # 70% of claimed SOL goes to Rewards Vault
 
-# Node math (fixed in code; documented here)
-# UNIT_SIZE = 300_000 FARTNODE (adjusted for token decimals)
-# MAX_UNITS_PER_WALLET = 10
-# TOTAL_NODE_UNITS = 160
+# Eligibility rules (example values)
+MIN_ELIGIBLE_BALANCE=300000    # minimum FARTNODE tokens to be included
+MAX_ELIGIBLE_BALANCE=50000000  # optional whale cap, 0 = no cap
 ```
 
 Requirements:
 
-- `CREATOR_SECRET_B58` and `REWARDS_VAULT_SECRET_B58` are **base58-encoded** secret keys.
+- `CREATOR_SECRET_B58` and `REWARDS_VAULT_SECRET_B58` are **base58‑encoded** secret keys.
 - Creator Wallet must be the wallet that receives Pump.fun creator fees.
 - Rewards Vault must hold enough SOL to cover distributions + fees.
 
@@ -253,7 +256,7 @@ spl-token mint <MINT> <AMOUNT_FOR_HOLDER1>
 spl-token mint <MINT> <AMOUNT_FOR_HOLDER2>
 ```
 
-Set `FARTNODE_MINT` in `.env` to this devnet mint and reduce `USD_THRESHOLD` (e.g. `0`) for testing.
+Set `FARTNODE_MINT` in `.env` to this devnet mint and tune `MIN_ELIGIBLE_BALANCE` / `MAX_ELIGIBLE_BALANCE` as needed.
 
 ### 4. Run a single epoch (devnet)
 
@@ -265,7 +268,7 @@ Expected behavior:
 
 - Attempt to claim creator fees (devnet Pump.fun behavior may differ; adjust for mainnet later).
 - Top up Rewards Vault with a share of claimed SOL (if any).
-- Snapshot holders, compute node units, distribute SOL.
+- Snapshot holders, filter by eligibility, distribute SOL pro‑rata.
 - Log actions to stdout or log file, depending on `logger.ts`.
 
 ---
@@ -275,16 +278,16 @@ Expected behavior:
 When devnet behavior is acceptable:
 
 1. Launch the real Pump.fun token from the Creator Wallet.
-2. Create / configure the real `$FARTNODE` SPL mint and distribution.
+2. Use that token as `$FARTNODE` (the fee‑earning Pump.fun token and the holder token are the same).
 3. Set `.env` to mainnet values:
    - `RPC_ENDPOINT=https://api.mainnet-beta.solana.com`
    - Mainnet `FARTNODE_MINT`
-   - Base58 secrets for mainnet Creator + Rewards Vault
-4. Set a meaningful `USD_THRESHOLD` (e.g. `1000` or higher).
+   - Base58 secrets for mainnet Creator + Rewards Vault.
+4. Set a meaningful `USD_THRESHOLD` (for example, `1000` or higher).
 5. Run a single epoch manually and verify:
    - Creator balance changes after claim.
    - Rewards Vault receives expected share.
-   - A sample of real holders receive SOL distributions consistent with node units.
+   - A sample of real holders receive SOL distributions proportional to their holdings.
 
 ---
 
@@ -292,10 +295,10 @@ When devnet behavior is acceptable:
 
 The service is designed to execute **one epoch per run**.
 
-Example cron (every 10 minutes):
+Example cron (once per day at 00:05 UTC):
 
 ```bash
-*/10 * * * * cd /opt/fartnode-distributor &&   /usr/bin/npm run epoch >> logs/fartnode.log 2>&1
+5 0 * * * cd /opt/fartnode-distributor &&   /usr/bin/npm run epoch >> logs/fartnode.log 2>&1
 ```
 
 Systemd timers can be configured similarly with a oneshot service.
@@ -308,13 +311,13 @@ Tests focus on correctness of math and deterministic behavior.
 
 ### Unit tests should cover
 
-- Node-unit computation:
-  - balances below and above 300k / 3M thresholds
-  - >160 potential units with correct capping and ordering
+- Eligibility:
+  - balances below and above `MIN_ELIGIBLE_BALANCE`
+  - whale cap behavior if `MAX_ELIGIBLE_BALANCE` is set
 - Distribution:
-  - allocation of `vaultBalanceLamports` across node units
+  - allocation of `vaultBalanceLamports` across eligible holders
   - sum of payouts ≤ vault balance
-  - non-negative residual
+  - non‑negative residual
 
 Run:
 
@@ -330,7 +333,7 @@ Configure `vitest` or `jest` in `package.json` as preferred.
 
 - Never commit private keys or `.env` files.
 - Restrict filesystem access to any key files.
-- Use dedicated creator and rewards vault wallets for this project.
+- Use dedicated Creator and Rewards Vault wallets for this project.
 - Monitor:
   - RPC reliability
   - Pump.fun API changes
