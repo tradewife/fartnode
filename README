@@ -1,0 +1,14 @@
+FARTNODE is a Solana service that turns Pump.fun creator rewards into automated, on-chain distributions for $FARTNODE holders.
+
+The bot:
+
+- Monitors the Pump.fun creator vault and enforces a configurable USD threshold.
+- Claims accumulated creator fees to the creator wallet.
+- Routes a configurable share of the claimed SOL into a dedicated rewards vault.
+- Snapshots $FARTNODE holders on-chain and computes “node units”:
+  - 300,000 $FARTNODE = 1 mini-node unit
+  - 3,000,000 $FARTNODE = 10-unit max-node
+  - Global cap: 160 units (16 max-node equivalents)
+- Distributes the rewards vault balance in SOL proportionally to active node units.
+
+The implementation is designed to be transparent and operationally simple: TypeScript, `@solana/web3.js`, a cron-safe entrypoint, and clean integration points for Pump.fun and (optionally) Jupiter.
